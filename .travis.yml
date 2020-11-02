@@ -4,15 +4,32 @@ dist: trusty
 
 env:
   global:
+    - ANDROID_API_LEVEL=30
+    - ANDROID_BUILD_TOOLS_VERSION=30.0.0
+    - ANDROID_EMU_API_LEVEL=22
+    - ANDROID_ABI=armeabi-v7a
+    - QEMU_AUDIO_DRV=none
 
 android:
   components:
-
+    # Android SDK tools
+    - tools
+    - platform-tools
+    
+    # BuildTools version
+    - build-tools-$ANDROID_BUILD_TOOLS_VERSION
+    
+    - android-$ANDROID_API_LEVEL
+    - android-$ANDROID_EMU_API_LEVEL
+    
     # Additional components
     - extra-google-google_play_services
     - extra-google-m2repository
     - extra-android-m2repository
     - extra-android-support
+    
+    # Emulator instance
+    - sys-img-$ANDROID_ABI-google_apis-$ANDROID_EMU_API_LEVEL
 
   licenses:
       - 'android-sdk-preview-license-52d11cd2'
@@ -20,9 +37,23 @@ android:
       - 'google-gdk-license-.+'
 
 before_install:
+  # Before installing the app it will accept agreements. 
+  - yes | sdkmanager "platforms;android-$ANDROID_EMU_API_LEVEL"
+  - yes | sdkmanager "platforms;android-$ANDROID_API_LEVEL"
 
 before_script:
+  # Called before anything is run.
   - chmod +x gradlew
+  
+  # Emulator instance
+  - echo no | android create avd --force -n test -t android-$ANDROID_EMU_API_LEVEL --abi google_apis/$ANDROID_ABI
+  # No graphical interface.
+  - emulator -avd test -no-window &
+  - android-wait-for-emulator
+  # Wait until everything is setup.
+  - adb shell input keyevent 82 & 
+  
+  # Last & makes sure it keeps listening.  In case you enter lines. 
 
 #script:
 #  - ./gradlew clean build
